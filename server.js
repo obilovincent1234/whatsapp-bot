@@ -7,7 +7,7 @@ const axios = require('axios');
 const mime = require('mime-types');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 9999;
 
 let clientReady = false;
 let latestQRCode = null;
