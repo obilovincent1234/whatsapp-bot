@@ -2,6 +2,8 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const express = require('express');
 const qrcode = require('qrcode-terminal');
 const bodyParser = require('body-parser');
+const axios = require('axios');
+const mime = require('mime-types');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -52,7 +54,13 @@ app.post('/send-message', async (req, res) => {
         }
 
         if (imageUrl) {
-            const media = await MessageMedia.fromUrl(imageUrl);
+            // Manually fetch image and create MessageMedia
+            const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+            const mimeType = response.headers['content-type'];
+            const extension = mime.extension(mimeType);
+            const base64Image = Buffer.from(response.data, 'binary').toString('base64');
+
+            const media = new MessageMedia(mimeType, base64Image, `image.${extension}`);
             await client.sendMessage(group.id._serialized, media, { caption });
         } else {
             await client.sendMessage(group.id._serialized, caption);
@@ -60,8 +68,8 @@ app.post('/send-message', async (req, res) => {
 
         return res.json({ success: true, message: 'Message sent!' });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: 'Error sending message' });
+        console.error('❌ Error:', err);
+        return res.status(500).json({ success: false, message: 'Error sending message', error: err.message });
     }
 });
 
@@ -74,4 +82,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`🚀 Server running at http://localhost:${port}`);
 });
-              
