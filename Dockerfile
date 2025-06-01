@@ -1,6 +1,5 @@
 FROM node:18-bullseye
 
-# Install Puppeteer dependencies, including libdrm2 and others needed for Chromium
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -11,9 +10,10 @@ RUN apt-get update && apt-get install -y \
     libcups2 \
     libdbus-1-3 \
     libdrm2 \
+    libdrm-common \
     libexpat1 \
     libfontconfig1 \
-    libgbm1 \
+    libgbm-dev \
     libglib2.0-0 \
     libgtk-3-0 \
     libnss3 \
