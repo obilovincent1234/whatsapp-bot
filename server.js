@@ -8,6 +8,8 @@ const mime = require('mime-types');
 const app = express();
 const port = process.env.PORT || 3000;
 
+let clientReady = false; // Track readiness
+
 // WhatsApp Client with persistent session using LocalAuth
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -24,6 +26,7 @@ client.on('qr', (qr) => {
 });
 
 client.on('ready', () => {
+    clientReady = true;
     console.log('✅ WhatsApp client is ready!');
 });
 
@@ -32,6 +35,7 @@ client.on('auth_failure', () => {
 });
 
 client.on('disconnected', (reason) => {
+    clientReady = false;
     console.log('❌ WhatsApp disconnected:', reason);
 });
 
@@ -43,6 +47,10 @@ app.use(bodyParser.json());
 
 // Send message to WhatsApp group or contact
 app.post('/send-message', async (req, res) => {
+    if (!clientReady) {
+        return res.status(503).json({ success: false, message: 'WhatsApp client not ready. Try again shortly.' });
+    }
+
     const { groupName, caption, imageUrl } = req.body;
 
     try {
