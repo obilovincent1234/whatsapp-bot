@@ -1,6 +1,6 @@
 FROM node:18-bullseye
 
-# Install dependencies for Puppeteer / Chromium
+# Install dependencies for Puppeteer / Chromium, including libdrm2
 RUN apt-get update && apt-get install -y \
     libgconf-2-4 \
     libnss3 \
@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libfontconfig1 \
     libxext6 \
     libxfixes3 \
+    libdrm2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
