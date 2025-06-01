@@ -1,7 +1,7 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const express = require('express');
 const qrcodeTerminal = require('qrcode-terminal');
-const QRCode = require('qrcode');  // Add this to generate QR as image
+const QRCode = require('qrcode');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const mime = require('mime-types');
@@ -9,10 +9,9 @@ const mime = require('mime-types');
 const app = express();
 const port = process.env.PORT || 3000;
 
-let clientReady = false; // Track readiness
-let latestQRCode = null; // Store latest QR code string
+let clientReady = false;
+let latestQRCode = null;
 
-// WhatsApp Client with persistent session using LocalAuth
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
@@ -21,7 +20,6 @@ const client = new Client({
     }
 });
 
-// Show QR code in terminal on first login, and save the string
 client.on('qr', (qr) => {
     latestQRCode = qr;
     console.log('Scan this QR code in WhatsApp:');
@@ -30,7 +28,7 @@ client.on('qr', (qr) => {
 
 client.on('ready', () => {
     clientReady = true;
-    latestQRCode = null;  // Clear QR code after ready
+    latestQRCode = null;
     console.log('✅ WhatsApp client is ready!');
 });
 
@@ -43,21 +41,17 @@ client.on('disconnected', (reason) => {
     console.log('❌ WhatsApp disconnected:', reason);
 });
 
-// Start WhatsApp client
 client.initialize();
 
-// Express middleware
 app.use(bodyParser.json());
 
-// Endpoint to serve QR code image for scanning in browser
+// Serve QR code as image
 app.get('/qr', async (req, res) => {
     if (!latestQRCode) {
-        return res.status(404).send('No QR code available right now. Either already authenticated or not generated yet.');
+        return res.status(404).send('No QR code available right now. Already authenticated or not generated yet.');
     }
     try {
-        // Generate a Data URL for QR code image
         const qrImageDataUrl = await QRCode.toDataURL(latestQRCode);
-        // Send simple HTML displaying QR code image
         res.send(`
             <h1>Scan this WhatsApp QR code</h1>
             <img src="${qrImageDataUrl}" />
@@ -69,7 +63,6 @@ app.get('/qr', async (req, res) => {
     }
 });
 
-// Send message to WhatsApp group or contact
 app.post('/send-message', async (req, res) => {
     if (!clientReady) {
         return res.status(503).json({ success: false, message: 'WhatsApp client not ready. Try again shortly.' });
@@ -86,12 +79,10 @@ app.post('/send-message', async (req, res) => {
         }
 
         if (imageUrl) {
-            // Manually fetch image and create MessageMedia
             const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
             const mimeType = response.headers['content-type'];
             const extension = mime.extension(mimeType);
             const base64Image = Buffer.from(response.data, 'binary').toString('base64');
-
             const media = new MessageMedia(mimeType, base64Image, `image.${extension}`);
             await client.sendMessage(group.id._serialized, media, { caption });
         } else {
@@ -105,12 +96,10 @@ app.post('/send-message', async (req, res) => {
     }
 });
 
-// Health check
 app.get('/', (req, res) => {
     res.send('WhatsApp Bot is running!');
 });
 
-// Start Express server
 app.listen(port, () => {
     console.log(`🚀 Server running at http://localhost:${port}`);
 });
